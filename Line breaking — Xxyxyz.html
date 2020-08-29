@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Line breaking — Xxyxyz</title>
+	<meta name="description" content="Line breaking."> 
+	<link rel="alternate" type="application/atom+xml" title="Xxyxyz feed" href="http://xxyxyz.org/feed">
+	<link rel="stylesheet" href="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/css_002.css" type="text/css">
+	<link rel="stylesheet" href="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/css.css" type="text/css">
+	<link rel="stylesheet" href="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/font-awesome.css">
+	<link rel="stylesheet" href="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/style.css" type="text/css">
+	<script async="" src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/analytics.js"></script><script src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/highlight.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-33654362-2', 'xxyxyz.org');
+		ga('send', 'pageview');
+	</script>
+</head>
+<body>
+	<header>
+		<nav>
+			<h4><a href="http://xxyxyz.org/">Xxyxyz</a></h4>
+			<ul>
+				<li><a href="http://xxyxyz.org/flat/">Flat</a></li>
+				<li><a href="http://xxyxyz.org/even/">Even</a></li>
+			</ul>
+		</nav>
+	</header>
+	<section>
+		<h4>Line breaking</h4>
+		<p><img alt="Test" src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/test.svg" width="567" height="567"></p><p>Line
+ breaking, also known as word wrapping or paragraph formation, is the 
+problem of dividing a text into a sequence of lines so that every line 
+spans at most some fixed width.</p><p>One way of solving the problem is 
+to gradually form the lines word by word. In the case the concatenating 
+of one more word to a line would exceed its prescribed width, simply 
+move the word to the next line and continue from there. While such 
+greedy algorithm is both simple and fast, it may leave too much 
+whitespace at the end of a line. The reasoning against such visual 
+disparities is that they capture attention and therefore alter the 
+reading in arbitrary way. In other words, it might be advantageous not 
+to make use of the full line width now, as it might help to even out 
+some lines later. Consider the following examples:</p><pre><code class="undefined">---------
+a b c d e
+f g h i j
+k l m n o
+p
+qqqqqqqqq
+</code></pre><p>and</p><pre><code class="undefined">---------
+a b c d
+e f g h
+i j k l
+m n o p
+qqqqqqqqq
+</code></pre><p>To counter the wildly different line lengths one could 
+measure the cost of breaking a line in a particular way and penalize the
+ huge gaps much more than the smaller ones. The idea then is to come up 
+with a configuration of line breaks which minimizes the total sum of 
+such penalties, a strategy know as "minimum raggedness". A line 
+exceeding the allowed width should incur an infinitely large penalty; 
+otherwise the cost should follow a quickly growing function, such as the
+ squared size of the gap.</p><p>As a side note, line breaking defined as above is a special case of the "least weight subsequence" problem.</p><p>The words used in the diagrams were of length 1 and the time values are the best of 10 runs under PyPy 2.1.</p><h4>Brute force</h4><p>An
+ immediate approach is to try to search trough all the possible break 
+configurations and return the best one. Since any two consecutive words 
+might get split up by a break, there are order of O(2&nbsp;^&nbsp;n) 
+alternatives. Consequently, it is not feasible to form a paragraph of 
+more than 30 - 40 words.</p><pre><code class="python"><span class="keyword">from</span> itertools <span class="keyword">import</span> combinations, chain
+
+<span class="function"><span class="keyword">def</span> <span class="title">powerset</span><span class="params">(iterable)</span>:</span>
+    s = list(iterable)
+    <span class="keyword">return</span> chain.from_iterable(combinations(s, r) <span class="keyword">for</span> r <span class="keyword">in</span> range(len(s)+<span class="number">1</span>))
+
+<span class="function"><span class="keyword">def</span> <span class="title">naive</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+
+    minimum = <span class="number">10</span> ** <span class="number">20</span>
+    breaks = ()
+    <span class="keyword">for</span> b <span class="keyword">in</span> powerset(range(<span class="number">1</span>, count)):
+        m = <span class="number">0</span>
+        i = <span class="number">0</span>
+        <span class="keyword">for</span> j <span class="keyword">in</span> chain(b, (count,)):
+            w = len(<span class="string">' '</span>.join(words[i:j]))
+            <span class="keyword">if</span> w &gt; width:
+                <span class="keyword">break</span>
+            m += (width - w) ** <span class="number">2</span>
+            i = j
+        <span class="keyword">else</span>:
+            <span class="keyword">if</span> m &lt; minimum:
+                minimum = m
+                breaks = b
+
+    lines = []
+    i = <span class="number">0</span>
+    <span class="keyword">for</span> j <span class="keyword">in</span> chain(breaks, (count,)):
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        i = j
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/naive.svg" alt="Brute force"></p><h4>Dynamic programming</h4><p>The
+ deficiency of first idea lies in that it repeatedly solves the same 
+subproblems. Yet suppose there was an optimal configuration of lines. 
+Plucking off its last line would still keep the layout optimal because 
+otherwise it would be possible to improve it and, together with the 
+removed line, would result in even better configuration, contradicting 
+its optimality. To solve each subproblem just once, it is then necessary
+ to find out and later re-use which of the lines ending with some word 
+contributes least to the overall cost. As each of the "n" words could 
+terminate at most "n" potential lines, the algorithm runs in 
+O(n&nbsp;^&nbsp;2).</p><pre><code class="python"><span class="function"><span class="keyword">def</span> <span class="title">dynamic</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+    slack = [[<span class="number">0</span>] * count <span class="keyword">for</span> i <span class="keyword">in</span> range(count)]
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(count):
+        slack[i][i] = width - len(words[i])
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(i + <span class="number">1</span>, count):
+            slack[i][j] = slack[i][j - <span class="number">1</span>] - len(words[j]) - <span class="number">1</span>
+
+    minima = [<span class="number">0</span>] + [<span class="number">10</span> ** <span class="number">20</span>] * count
+    breaks = [<span class="number">0</span>] * count
+    <span class="keyword">for</span> j <span class="keyword">in</span> range(count):
+        i = j
+        <span class="keyword">while</span> i &gt;= <span class="number">0</span>:
+            <span class="keyword">if</span> slack[i][j] &lt; <span class="number">0</span>:
+                cost = <span class="number">10</span> ** <span class="number">10</span>
+            <span class="keyword">else</span>:
+                cost = minima[i] + slack[i][j] ** <span class="number">2</span>
+            <span class="keyword">if</span> minima[j + <span class="number">1</span>] &gt; cost:
+                minima[j + <span class="number">1</span>] = cost
+                breaks[j] = i
+            i -= <span class="number">1</span>
+
+    lines = []
+    j = count
+    <span class="keyword">while</span> j &gt; <span class="number">0</span>:
+        i = breaks[j - <span class="number">1</span>]
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        j = i
+    lines.reverse()
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/dynamic.svg" alt="Dynamic programming"></p><h4>Shortest path</h4><p>The
+ previous way can be sped up even further: the length offsets used to 
+calculate any line length in constant time can easily be pre-processed 
+in O(n), rather than O(n&nbsp;^&nbsp;2), and there is no point in 
+putting ever more words on a line once it reaches the allowed width. The
+ performance then improves down to O(n&nbsp;*&nbsp;width).</p><p>This is
+ exactly the same result as if the text was thought of as a 
+(topologically sorted) directed acyclic graph, with the nodes and arcs 
+representing words and breaks, respectively. By substituting the 
+penalties for the weights, the problem becomes the one of finding the 
+shortest path which is known to be solvable in linear time. Note that 
+the number of edges remains O(n&nbsp;*&nbsp;width).</p><p>Flat uses the latter method.</p><pre><code class="python"><span class="function"><span class="keyword">def</span> <span class="title">shortest</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+    offsets = [<span class="number">0</span>]
+    <span class="keyword">for</span> w <span class="keyword">in</span> words:
+        offsets.append(offsets[-<span class="number">1</span>] + len(w))
+
+    minima = [<span class="number">0</span>] + [<span class="number">10</span> ** <span class="number">20</span>] * count
+    breaks = [<span class="number">0</span>] * (count + <span class="number">1</span>)
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(count):
+        j = i + <span class="number">1</span>
+        <span class="keyword">while</span> j &lt;= count:
+            w = offsets[j] - offsets[i] + j - i - <span class="number">1</span>
+            <span class="keyword">if</span> w &gt; width:
+                <span class="keyword">break</span>
+            cost = minima[i] + (width - w) ** <span class="number">2</span>
+            <span class="keyword">if</span> cost &lt; minima[j]:
+                minima[j] = cost
+                breaks[j] = i
+            j += <span class="number">1</span>
+
+    lines = []
+    j = count
+    <span class="keyword">while</span> j &gt; <span class="number">0</span>:
+        i = breaks[j]
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        j = i
+    lines.reverse()
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/shortest.svg" alt="Shortest path"></p><h4>Binary search</h4><p>The
+ method using dynamic programming can be written as two nested loops: 
+the outer one iterates over every word and the inner one searches for 
+the most suitable break. Hirschberg and Larmore showed in 1987 an 
+algorithm which is able to use binary search instead of the inner loop 
+in the case the weight function is "concave". It turns out that the 
+penalty discussed thus far can be made to satisfy this property by 
+handling the "infinities" slightly differently, giving an overall time 
+of O(n&nbsp;*&nbsp;log&nbsp;n). A similar algorithm due to Galil and 
+Giancarlo from 1989 is given below.</p><p>The concave property says: w(i, j) + w(i', j') &lt;= w(i', j) + w(i, j'), where i &lt; i' &lt; j &lt; j'.</p><pre><code class="python"><span class="keyword">from</span> collections <span class="keyword">import</span> deque
+
+<span class="function"><span class="keyword">def</span> <span class="title">binary</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+    offsets = [<span class="number">0</span>]
+    <span class="keyword">for</span> w <span class="keyword">in</span> words:
+        offsets.append(offsets[-<span class="number">1</span>] + len(w))
+
+    minima = [<span class="number">0</span>] * (count + <span class="number">1</span>)
+    breaks = [<span class="number">0</span>] * (count + <span class="number">1</span>)
+
+    <span class="function"><span class="keyword">def</span> <span class="title">c</span><span class="params">(i, j)</span>:</span>
+        w = offsets[j] - offsets[i] + j - i - <span class="number">1</span>
+        <span class="keyword">if</span> w &gt; width:
+            <span class="keyword">return</span> <span class="number">10</span> ** <span class="number">10</span> * (w - width)
+        <span class="keyword">return</span> minima[i] + (width - w) ** <span class="number">2</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">h</span><span class="params">(l, k)</span>:</span>
+        low, high = l + <span class="number">1</span>, count
+        <span class="keyword">while</span> low &lt; high:
+            mid = (low + high) // <span class="number">2</span>
+            <span class="keyword">if</span> c(l, mid) &lt;= c(k, mid):
+                high = mid
+            <span class="keyword">else</span>:
+                low = mid + <span class="number">1</span>
+        <span class="keyword">if</span> c(l, high) &lt;= c(k, high):
+            <span class="keyword">return</span> high
+        <span class="keyword">return</span> l + <span class="number">2</span>
+
+    q = deque([(<span class="number">0</span>, <span class="number">1</span>)])
+    <span class="keyword">for</span> j <span class="keyword">in</span> range(<span class="number">1</span>, count + <span class="number">1</span>):
+        l = q[<span class="number">0</span>][<span class="number">0</span>]
+        <span class="keyword">if</span> c(j - <span class="number">1</span>, j) &lt;= c(l, j):
+            minima[j] = c(j - <span class="number">1</span>, j)
+            breaks[j] = j - <span class="number">1</span>
+            q.clear()
+            q.append((j - <span class="number">1</span>, j + <span class="number">1</span>))
+        <span class="keyword">else</span>:
+            minima[j] = c(l, j)
+            breaks[j] = l
+            <span class="keyword">while</span> c(j - <span class="number">1</span>, q[-<span class="number">1</span>][<span class="number">1</span>]) &lt;= c(q[-<span class="number">1</span>][<span class="number">0</span>], q[-<span class="number">1</span>][<span class="number">1</span>]):
+                q.pop()
+            q.append((j - <span class="number">1</span>, h(j - <span class="number">1</span>, q[-<span class="number">1</span>][<span class="number">0</span>])))
+            <span class="keyword">if</span> j + <span class="number">1</span> == q[<span class="number">1</span>][<span class="number">1</span>]:
+                q.popleft()
+            <span class="keyword">else</span>:
+                q[<span class="number">0</span>] = q[<span class="number">0</span>][<span class="number">0</span>], (q[<span class="number">0</span>][<span class="number">1</span>] + <span class="number">1</span>)
+
+    lines = []
+    j = count
+    <span class="keyword">while</span> j &gt; <span class="number">0</span>:
+        i = breaks[j]
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        j = i
+    lines.reverse()
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/binary.svg" alt="Binary search"></p><h4>Total monotonicity</h4><p>Each
+ iteration of the dynamic programming scheme can also be seen as filling
+ in a matrix, where a cell adds up the least overall cost to a 
+subproblem (a column minimum) and a penalty. A concave weight function 
+implies that the matrix is totally monotone and in 1987 Shor, Moran, 
+Aggarwal, Wilber and Klawe devised an algorithm which finds the row 
+maxima of such matrix in linear time. Even though SMAWK can be modified 
+to find column minima instead, it is not possible to apply it directly 
+to this "on-line" matrix as it might try to evaluate a not "available" 
+cell, i.e. a cell dependent on some yet unknown column minimum. However,
+ Wilber came up with an algorithm in 1988 which "pretends" to know the 
+minima and still runs in O(n) time. An "ordered" algorithm which obeys 
+the availability of the matrix as presented by Aggarwal and Tokuyama in 
+1998 follows.</p><pre><code class="python"><span class="function"><span class="keyword">def</span> <span class="title">linear</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+    offsets = [<span class="number">0</span>]
+    <span class="keyword">for</span> w <span class="keyword">in</span> words:
+        offsets.append(offsets[-<span class="number">1</span>] + len(w))
+
+    minima = [<span class="number">0</span>] + [<span class="number">10</span> ** <span class="number">20</span>] * count
+    breaks = [<span class="number">0</span>] * (count + <span class="number">1</span>)
+
+    <span class="function"><span class="keyword">def</span> <span class="title">cost</span><span class="params">(i, j)</span>:</span>
+        w = offsets[j] - offsets[i] + j - i - <span class="number">1</span>
+        <span class="keyword">if</span> w &gt; width:
+            <span class="keyword">return</span> <span class="number">10</span> ** <span class="number">10</span> * (w - width)
+        <span class="keyword">return</span> minima[i] + (width - w) ** <span class="number">2</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">smawk</span><span class="params">(rows, columns)</span>:</span>
+        stack = []
+        i = <span class="number">0</span>
+        <span class="keyword">while</span> i &lt; len(rows):
+            <span class="keyword">if</span> stack:
+                c = columns[len(stack) - <span class="number">1</span>]
+                <span class="keyword">if</span> cost(stack[-<span class="number">1</span>], c) &lt; cost(rows[i], c):
+                    <span class="keyword">if</span> len(stack) &lt; len(columns):
+                        stack.append(rows[i])
+                    i += <span class="number">1</span>
+                <span class="keyword">else</span>:
+                    stack.pop()
+            <span class="keyword">else</span>:
+                stack.append(rows[i])
+                i += <span class="number">1</span>
+        rows = stack
+
+        <span class="keyword">if</span> len(columns) &gt; <span class="number">1</span>:
+            smawk(rows, columns[<span class="number">1</span>::<span class="number">2</span>])
+
+        i = j = <span class="number">0</span>
+        <span class="keyword">while</span> j &lt; len(columns):
+            <span class="keyword">if</span> j + <span class="number">1</span> &lt; len(columns):
+                end = breaks[columns[j + <span class="number">1</span>]]
+            <span class="keyword">else</span>:
+                end = rows[-<span class="number">1</span>]
+            c = cost(rows[i], columns[j])
+            <span class="keyword">if</span> c &lt; minima[columns[j]]:
+                minima[columns[j]] = c
+                breaks[columns[j]] = rows[i]
+            <span class="keyword">if</span> rows[i] &lt; end:
+                i += <span class="number">1</span>
+            <span class="keyword">else</span>:
+                j += <span class="number">2</span>
+
+    n = count + <span class="number">1</span>
+    i = <span class="number">0</span>
+    offset = <span class="number">0</span>
+    <span class="keyword">while</span> <span class="built_in">True</span>:
+        r = min(n, <span class="number">2</span> ** (i + <span class="number">1</span>))
+        edge = <span class="number">2</span> ** i + offset
+        smawk(range(<span class="number">0</span> + offset, edge), range(edge, r + offset))
+        x = minima[r - <span class="number">1</span> + offset]
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(<span class="number">2</span> ** i, r - <span class="number">1</span>):
+            y = cost(j + offset, r - <span class="number">1</span> + offset)
+            <span class="keyword">if</span> y &lt;= x:
+                n -= j
+                i = <span class="number">0</span>
+                offset += j
+                <span class="keyword">break</span>
+        <span class="keyword">else</span>:
+            <span class="keyword">if</span> r == n:
+                <span class="keyword">break</span>
+            i = i + <span class="number">1</span>
+
+    lines = []
+    j = count
+    <span class="keyword">while</span> j &gt; <span class="number">0</span>:
+        i = breaks[j]
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        j = i
+    lines.reverse()
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/linear.svg" alt="Total monotonicity"></p><h4>Divide &amp; conquer</h4><p>One
+ additional option is to replace the preceding SMAWK routine and its 
+fairly large constant factor by a simple divide &amp; conquer monotone 
+matrix search. The complexity will drop back to 
+O(n&nbsp;*&nbsp;log&nbsp;n) but for smaller problem instances it may 
+actually run faster than the asymptotically superior approach.</p><pre><code class="python"><span class="function"><span class="keyword">def</span> <span class="title">divide</span><span class="params">(text, width)</span>:</span>
+    words = text.split()
+    count = len(words)
+    offsets = [<span class="number">0</span>]
+    <span class="keyword">for</span> w <span class="keyword">in</span> words:
+        offsets.append(offsets[-<span class="number">1</span>] + len(w))
+
+    minima = [<span class="number">0</span>] + [<span class="number">10</span> ** <span class="number">20</span>] * count
+    breaks = [<span class="number">0</span>] * (count + <span class="number">1</span>)
+
+    <span class="function"><span class="keyword">def</span> <span class="title">cost</span><span class="params">(i, j)</span>:</span>
+        w = offsets[j] - offsets[i] + j - i - <span class="number">1</span>
+        <span class="keyword">if</span> w &gt; width:
+            <span class="keyword">return</span> <span class="number">10</span> ** <span class="number">10</span>
+        <span class="keyword">return</span> minima[i] + (width - w) ** <span class="number">2</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">search</span><span class="params">(i0, j0, i1, j1)</span>:</span>
+        stack = [(i0, j0, i1, j1)]
+        <span class="keyword">while</span> stack:
+            i0, j0, i1, j1 = stack.pop()
+            <span class="keyword">if</span> j0 &lt; j1:
+                j = (j0 + j1) // <span class="number">2</span>
+                <span class="keyword">for</span> i <span class="keyword">in</span> range(i0, i1):
+                    c = cost(i, j)
+                    <span class="keyword">if</span> c &lt;= minima[j]:
+                        minima[j] = c
+                        breaks[j] = i
+                stack.append((breaks[j], j+<span class="number">1</span>, i1, j1))
+                stack.append((i0, j0, breaks[j]+<span class="number">1</span>, j))
+
+    n = count + <span class="number">1</span>
+    i = <span class="number">0</span>
+    offset = <span class="number">0</span>
+    <span class="keyword">while</span> <span class="built_in">True</span>:
+        r = min(n, <span class="number">2</span> ** (i + <span class="number">1</span>))
+        edge = <span class="number">2</span> ** i + offset
+        search(<span class="number">0</span> + offset, edge, edge, r + offset)
+        x = minima[r - <span class="number">1</span> + offset]
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(<span class="number">2</span> ** i, r - <span class="number">1</span>):
+            y = cost(j + offset, r - <span class="number">1</span> + offset)
+            <span class="keyword">if</span> y &lt;= x:
+                n -= j
+                i = <span class="number">0</span>
+                offset += j
+                <span class="keyword">break</span>
+        <span class="keyword">else</span>:
+            <span class="keyword">if</span> r == n:
+                <span class="keyword">break</span>
+            i = i + <span class="number">1</span>
+
+    lines = []
+    j = count
+    <span class="keyword">while</span> j &gt; <span class="number">0</span>:
+        i = breaks[j]
+        lines.append(<span class="string">' '</span>.join(words[i:j]))
+        j = i
+    lines.reverse()
+    <span class="keyword">return</span> lines
+</code></pre><p><img src="Line%20breaking%20%E2%80%94%20Xxyxyz_arquivos/divide.svg" alt="Divide &amp; conquer"></p><h4>Further reading</h4><p>D. E. Knuth, M. F. Plass. Breaking Paragraphs into Lines. Software--Practice and Experience 11, 1981.</p><p>D. S. Hirschberg, L. L. Larmore. The least weight subsequence problem. SIAM Journal on Computing, 1987.</p><p>D. S. Hirschberg, L. L. Larmore. New applications of failure functions. Journal of the Association for Computer Machinery, 1987.</p><p>A.
+ Aggarwal, M. M. Klawe, S. Moran, P. Shor, R. Wilber. Geometric 
+Applications of a Matrix-Searching Algorithm. Algorithmica 2, 1987.</p><p>R. Wilber. The Concave Least-Weight Subsequence Problem Revisited. Journal of Algorithms 9, 1988.</p><p>Z.
+ Galil, R. Giancarlo. Speeding up dynamic programming with applications 
+to molecular biology. Theoretical Computer Science 64, 1989.</p><p>Z. 
+Galil, K. Park. A Linear-Time Algorithm for Concave One-Dimensional 
+Dynamic Programming. Information Processing Letters 33, 1989.</p><p>D. Eppstein. Sequence comparison with mixed convex and concave costs. Journal of Algorithms 11, 1990.</p><p>D.
+ Eppstein, Z. Galil, R. Giancarlo, G. F. Italiano. Sparse dynamic 
+programming II: Convex and concave cost functions. Journal of the ACM, 
+1992.</p><p>P. Becker. Construction of Nearly Optimal Multiway Trees. COCOON, vol. 1276 of Lecture Notes in Computer Science, 1997.</p><p>O.
+ de Moor, J. Gibbons. Bridging the Algorithm Gap: A Linear-time 
+Functional Program for Paragraph Formatting. Technical Report, Oxford 
+Brookes University, 1997.</p><p>A. Aggarwal, T. Tokuyama. Consecutive 
+interval query and dynamic programming on intervals. Discrete Applied 
+Mathematics 85, 1998.</p>
+		<p>— 21. 2. 2014</p>
+	</section>
+	<footer>
+	</footer>
+
+</body></html>

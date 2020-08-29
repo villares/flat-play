@@ -1,0 +1,108 @@
+html {
+	font-family: Montserrat, sans-serif;
+	font-size: 1.1em;
+}
+
+body {
+	margin: 0 auto;
+	width: 52em;
+}
+
+header {
+	padding: 1em 0;
+	position: relative;
+}
+
+footer {
+	padding-bottom: 4em;
+}
+
+a {
+	color: rgb(25, 51, 229);
+	border-bottom: 2px solid rgb(25, 51, 229);
+	text-decoration: none;
+}
+
+pre {
+	padding: 0.5em 0.5em 2em 2em;
+	background-color: white;
+}
+
+code {
+	font-family: 'Source Code Pro', monospace;
+}
+
+ul {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+li {
+	padding-left: 2em;
+	padding-bottom: 0.5em;
+}
+
+header h4, header ul, header li {
+	display: inline;
+}
+
+header h4 {
+	letter-spacing: -0.645em;
+}
+
+header h4 a {
+	padding-right: 0.75em;
+}
+
+section li {
+	width: 42em;
+}
+
+nav, p {
+	width: 42em;
+	line-height: 1.4em;
+}
+
+.menufix {
+	margin-top: -3.4em;
+}
+
+.shadowfix {
+	margin: -34px 0px -36px -54px;
+}
+
+::selection {
+	background-color: yellow;
+}
+
+pre code {
+	display: block;
+	color: rgb(0, 0, 0);
+	max-width: 800px;
+}
+
+pre .comment {
+	color: rgb(140, 166, 242);
+}
+
+pre .decorator {
+	font-weight: bold
+}
+
+pre .keyword, pre .built_in {
+	font-weight: bold
+}
+
+pre .title {
+	color: rgb(0, 0, 153);
+	font-weight: bold
+}
+
+pre .number {
+	color: rgb(217, 0, 0);
+}
+
+pre .string {
+	color: rgb(25, 51, 229);
+}

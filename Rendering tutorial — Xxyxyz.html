@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Rendering tutorial — Xxyxyz</title>
+	<meta name="description" content="Rendering tutorial."> 
+	<link rel="alternate" type="application/atom+xml" title="Xxyxyz feed" href="http://xxyxyz.org/feed">
+	<link rel="stylesheet" href="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/css_002.css" type="text/css">
+	<link rel="stylesheet" href="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/css.css" type="text/css">
+	<link rel="stylesheet" href="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/font-awesome.css">
+	<link rel="stylesheet" href="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/style.css" type="text/css">
+	<script async="" src="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/analytics.js"></script><script src="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/highlight.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-33654362-2', 'xxyxyz.org');
+		ga('send', 'pageview');
+	</script>
+</head>
+<body>
+	<header>
+		<nav>
+			<h4><a href="http://xxyxyz.org/">Xxyxyz</a></h4>
+			<ul>
+				<li><a href="http://xxyxyz.org/flat/">Flat</a></li>
+				<li><a href="http://xxyxyz.org/even/">Even</a></li>
+			</ul>
+		</nav>
+	</header>
+	<section>
+		<h4>Rendering tutorial</h4>
+		<p><img src="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/cornellbox.png" alt="Cornell Box"></p><p>This
+ post looks into how to turn a 3D scene into an image. The objects of a 
+scene are modeled with triangular primitives connected to a so-called 
+mesh. Every mesh has a material which controls its appearance, currently
+ there is support for a diffuse (i.e. matte) material only. After the 
+scene is set up, one needs to define a camera: two points from where one
+ looks at what and the angle of view expressed by focal length. For 
+simulating how the light propagates inside the scene, Flat uses <a href="http://en.wikipedia.org/wiki/Path_tracing">path-tracing</a>,
+ a very accurate (and extremely computationally intensive) method. The 
+simulation may result in light intensities way beyond what a monitor can
+ display, therefore it is needed to employ "tone mapping" to reduce its 
+dynamic range.</p><pre><code class="python"><span class="keyword">from</span> flat <span class="keyword">import</span> diffuse, mesh, scene
+
+gray = diffuse((<span class="number">0.7</span>, <span class="number">0.7</span>, <span class="number">0.7</span>))
+red = diffuse((<span class="number">0.7</span>, <span class="number">0.2</span>, <span class="number">0.2</span>))
+green = diffuse((<span class="number">0.2</span>, <span class="number">0.7</span>, <span class="number">0.2</span>))
+lamp = diffuse((<span class="number">0.7</span>, <span class="number">0.7</span>, <span class="number">0.7</span>), (<span class="number">1000.0</span>, <span class="number">1000.0</span>, <span class="number">1000.0</span>))
+
+s = scene()
+<span class="comment"># Scene by Harrison Ainsworth / HXA7241</span>
+<span class="comment"># http://www.hxa.name/minilight/</span>
+s.camera((<span class="number">0.278</span>, <span class="number">0.275</span>, -<span class="number">0.789</span>), (<span class="number">0.278</span>, <span class="number">0.275</span>, <span class="number">0</span>), <span class="number">50</span>)
+s.environment((<span class="number">0.0906</span>, <span class="number">0.0943</span>, <span class="number">0.1151</span>), (<span class="number">0.1</span>, <span class="number">0.09</span>, <span class="number">0.07</span>))
+s.add(mesh(
+    ((<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.000</span>), (<span class="number">0.006</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.559</span>)),
+    ((<span class="number">0.006</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.000</span>), (<span class="number">0.003</span>, <span class="number">0.000</span>, <span class="number">0.000</span>)),
+    ((<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.559</span>)),
+    ((<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.006</span>, <span class="number">0.000</span>, <span class="number">0.559</span>))), gray)
+s.add(mesh(
+    ((<span class="number">0.006</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.000</span>), (<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.559</span>)),
+    ((<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.000</span>), (<span class="number">0.006</span>, <span class="number">0.000</span>, <span class="number">0.559</span>), (<span class="number">0.003</span>, <span class="number">0.000</span>, <span class="number">0.000</span>))), red)
+s.add(mesh(
+    ((<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.000</span>), (<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.000</span>)),
+    ((<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.000</span>), (<span class="number">0.556</span>, <span class="number">0.000</span>, <span class="number">0.559</span>))), green)
+s.add(mesh(
+    ((<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.000</span>), (<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.000</span>)),
+    ((<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.000</span>), (<span class="number">0.556</span>, <span class="number">0.549</span>, <span class="number">0.559</span>), (<span class="number">0.000</span>, <span class="number">0.549</span>, <span class="number">0.559</span>))), gray)
+s.add(mesh(
+    ((<span class="number">0.343</span>, <span class="number">0.545</span>, <span class="number">0.332</span>), (<span class="number">0.213</span>, <span class="number">0.545</span>, <span class="number">0.227</span>), (<span class="number">0.343</span>, <span class="number">0.545</span>, <span class="number">0.227</span>)),
+    ((<span class="number">0.213</span>, <span class="number">0.545</span>, <span class="number">0.227</span>), (<span class="number">0.343</span>, <span class="number">0.545</span>, <span class="number">0.332</span>), (<span class="number">0.213</span>, <span class="number">0.545</span>, <span class="number">0.332</span>))), lamp)
+s.add(mesh(
+    ((<span class="number">0.474</span>, <span class="number">0.165</span>, <span class="number">0.225</span>), (<span class="number">0.426</span>, <span class="number">0.165</span>, <span class="number">0.065</span>), (<span class="number">0.316</span>, <span class="number">0.165</span>, <span class="number">0.272</span>)),
+    ((<span class="number">0.266</span>, <span class="number">0.165</span>, <span class="number">0.114</span>), (<span class="number">0.316</span>, <span class="number">0.165</span>, <span class="number">0.272</span>), (<span class="number">0.426</span>, <span class="number">0.165</span>, <span class="number">0.065</span>)),
+    ((<span class="number">0.266</span>, <span class="number">0.000</span>, <span class="number">0.114</span>), (<span class="number">0.266</span>, <span class="number">0.165</span>, <span class="number">0.114</span>), (<span class="number">0.316</span>, <span class="number">0.165</span>, <span class="number">0.272</span>)),
+    ((<span class="number">0.316</span>, <span class="number">0.000</span>, <span class="number">0.272</span>), (<span class="number">0.266</span>, <span class="number">0.000</span>, <span class="number">0.114</span>), (<span class="number">0.316</span>, <span class="number">0.165</span>, <span class="number">0.272</span>)),
+    ((<span class="number">0.316</span>, <span class="number">0.000</span>, <span class="number">0.272</span>), (<span class="number">0.316</span>, <span class="number">0.165</span>, <span class="number">0.272</span>), (<span class="number">0.474</span>, <span class="number">0.165</span>, <span class="number">0.225</span>)),
+    ((<span class="number">0.474</span>, <span class="number">0.165</span>, <span class="number">0.225</span>), (<span class="number">0.316</span>, <span class="number">0.000</span>, <span class="number">0.272</span>), (<span class="number">0.474</span>, <span class="number">0.000</span>, <span class="number">0.225</span>)),
+    ((<span class="number">0.474</span>, <span class="number">0.000</span>, <span class="number">0.225</span>), (<span class="number">0.474</span>, <span class="number">0.165</span>, <span class="number">0.225</span>), (<span class="number">0.426</span>, <span class="number">0.165</span>, <span class="number">0.065</span>)),
+    ((<span class="number">0.426</span>, <span class="number">0.165</span>, <span class="number">0.065</span>), (<span class="number">0.426</span>, <span class="number">0.000</span>, <span class="number">0.065</span>), (<span class="number">0.474</span>, <span class="number">0.000</span>, <span class="number">0.225</span>)),
+    ((<span class="number">0.426</span>, <span class="number">0.000</span>, <span class="number">0.065</span>), (<span class="number">0.426</span>, <span class="number">0.165</span>, <span class="number">0.065</span>), (<span class="number">0.266</span>, <span class="number">0.165</span>, <span class="number">0.114</span>)),
+    ((<span class="number">0.266</span>, <span class="number">0.165</span>, <span class="number">0.114</span>), (<span class="number">0.266</span>, <span class="number">0.000</span>, <span class="number">0.114</span>), (<span class="number">0.426</span>, <span class="number">0.000</span>, <span class="number">0.065</span>))), gray)
+s.add(mesh(
+    ((<span class="number">0.133</span>, <span class="number">0.330</span>, <span class="number">0.247</span>), (<span class="number">0.291</span>, <span class="number">0.330</span>, <span class="number">0.296</span>), (<span class="number">0.242</span>, <span class="number">0.330</span>, <span class="number">0.456</span>)),
+    ((<span class="number">0.242</span>, <span class="number">0.330</span>, <span class="number">0.456</span>), (<span class="number">0.084</span>, <span class="number">0.330</span>, <span class="number">0.406</span>), (<span class="number">0.133</span>, <span class="number">0.330</span>, <span class="number">0.247</span>)),
+    ((<span class="number">0.133</span>, <span class="number">0.000</span>, <span class="number">0.247</span>), (<span class="number">0.133</span>, <span class="number">0.330</span>, <span class="number">0.247</span>), (<span class="number">0.084</span>, <span class="number">0.330</span>, <span class="number">0.406</span>)),
+    ((<span class="number">0.084</span>, <span class="number">0.330</span>, <span class="number">0.406</span>), (<span class="number">0.084</span>, <span class="number">0.000</span>, <span class="number">0.406</span>), (<span class="number">0.133</span>, <span class="number">0.000</span>, <span class="number">0.247</span>)),
+    ((<span class="number">0.084</span>, <span class="number">0.000</span>, <span class="number">0.406</span>), (<span class="number">0.084</span>, <span class="number">0.330</span>, <span class="number">0.406</span>), (<span class="number">0.242</span>, <span class="number">0.330</span>, <span class="number">0.456</span>)),
+    ((<span class="number">0.242</span>, <span class="number">0.330</span>, <span class="number">0.456</span>), (<span class="number">0.242</span>, <span class="number">0.000</span>, <span class="number">0.456</span>), (<span class="number">0.084</span>, <span class="number">0.000</span>, <span class="number">0.406</span>)),
+    ((<span class="number">0.242</span>, <span class="number">0.000</span>, <span class="number">0.456</span>), (<span class="number">0.242</span>, <span class="number">0.330</span>, <span class="number">0.456</span>), (<span class="number">0.291</span>, <span class="number">0.330</span>, <span class="number">0.296</span>)),
+    ((<span class="number">0.291</span>, <span class="number">0.330</span>, <span class="number">0.296</span>), (<span class="number">0.291</span>, <span class="number">0.000</span>, <span class="number">0.296</span>), (<span class="number">0.242</span>, <span class="number">0.000</span>, <span class="number">0.456</span>)),
+    ((<span class="number">0.291</span>, <span class="number">0.000</span>, <span class="number">0.296</span>), (<span class="number">0.291</span>, <span class="number">0.330</span>, <span class="number">0.296</span>), (<span class="number">0.133</span>, <span class="number">0.330</span>, <span class="number">0.247</span>)),
+    ((<span class="number">0.133</span>, <span class="number">0.330</span>, <span class="number">0.247</span>), (<span class="number">0.133</span>, <span class="number">0.000</span>, <span class="number">0.247</span>), (<span class="number">0.291</span>, <span class="number">0.000</span>, <span class="number">0.296</span>))), gray)
+
+s.render(<span class="number">200</span>, <span class="number">200</span>, <span class="number">10</span>).tonemapped().png(<span class="string">'cornellbox.png'</span>)
+</code></pre><p>The above runs on a dual-core 1.7 GHz i5 under PyPy 2.1 in 37 seconds and with <code>multiprocessing</code> turned off it took 56 seconds.</p><p>Out of curiosity, I tried to render the same scene (<code>cornellbox.ml.txt</code>)
+ in MiniLight 1.6, both of its C and Python versions, and the times were
+ 10 and 117 seconds, respectively. The comparison is not entirely fair: 
+MiniLight calculates the tone-mapped image every while and Flat uses 
+stratified sampling.</p><p>When using CPython 2.7 instead of PyPy, the 
+times in seconds become: 724 for Flat with multiprocessing, 1535 without
+ and 3188 for MiniLight. In other words, PyPy decreases the rendering 
+time by around 20x for multiprocessing and 27x for single-threaded 
+execution.</p><p><img src="Rendering%20tutorial%20%E2%80%94%20Xxyxyz_arquivos/duration.png" alt="Rendering times"></p><p>And here is the code used to draw the chart:</p><pre><code class="python"><span class="keyword">from</span> flat <span class="keyword">import</span> rgb, font, shape, strike, document, view
+
+<span class="function"><span class="keyword">def</span> <span class="title">chart</span><span class="params">(width, height, padding, data)</span>:</span>
+    black = rgb(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)
+    blue = rgb(<span class="number">25</span>, <span class="number">51</span>, <span class="number">229</span>)
+    <span class="comment"># Montserrat by Julieta Ulanovsky</span>
+    <span class="comment"># http://www.google.com/fonts/specimen/Montserrat</span>
+    regular = font.open(<span class="string">'Montserrat-Regular.ttf'</span>)
+    drawing = shape().stroke(blue).width(<span class="number">2.8</span>)
+    caption = strike(regular).size(<span class="number">11</span>, <span class="number">14</span>).color(black)
+    page = document(width, height, <span class="string">'pt'</span>).addpage()
+
+    values, keys = zip(*data)
+    maxvalue, maxkey = max(values), max(map(caption.width, keys))
+    scale = (width - padding * <span class="number">9.0</span> - maxkey) / maxvalue
+    step = (height - padding * (len(data) + <span class="number">1.0</span>)) / len(data)
+    half = caption.ascender() * <span class="number">0.7</span>
+    x, y = padding * <span class="number">4</span>, padding
+    <span class="keyword">for</span> value, key <span class="keyword">in</span> data:
+        dx, dy = x + value * scale, y + <span class="number">0.5</span> * step
+        page.place(drawing.line(x, dy, dx, dy))
+        page.place(caption.text(key)).position(dx + padding, dy - half)
+        y += step + padding
+
+    <span class="keyword">return</span> page.image(kind=<span class="string">'rgb'</span>).png()
+
+view(chart(<span class="number">800</span>, <span class="number">140</span>, <span class="number">8</span>, [
+    (<span class="number">10</span>, <span class="string">'MiniLight 1.6, C'</span>),
+    (<span class="number">37</span>, <span class="string">'Flat 0.1, PyPy 2.1, MP'</span>),
+    (<span class="number">56</span>, <span class="string">'Flat 0.1, PyPy 2.1'</span>),
+    (<span class="number">117</span>, <span class="string">'MiniLight 1.6, PyPy 2.1'</span>),
+    (<span class="number">724</span>, <span class="string">'Flat 0.1, CPython 2.7, MP'</span>),
+    (<span class="number">1535</span>, <span class="string">'Flat 0.1, CPython 2.7'</span>),
+    (<span class="number">3188</span>, <span class="string">'MiniLight 1.6, CPython 2.7'</span>)]))
+</code></pre>
+		<p>— 10. 11. 2013</p>
+	</section>
+	<footer>
+	</footer>
+
+</body></html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Making of: Flat API tree — Xxyxyz</title>
+	<meta name="description" content="Making of: Flat API tree."> 
+	<link rel="alternate" type="application/atom+xml" title="Xxyxyz feed" href="http://xxyxyz.org/feed">
+	<link rel="stylesheet" href="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/css_002.css" type="text/css">
+	<link rel="stylesheet" href="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/css.css" type="text/css">
+	<link rel="stylesheet" href="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/font-awesome.css">
+	<link rel="stylesheet" href="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/style.css" type="text/css">
+	<script async="" src="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/analytics.js"></script><script src="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/highlight.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-33654362-2', 'xxyxyz.org');
+		ga('send', 'pageview');
+	</script>
+</head>
+<body>
+	<header>
+		<nav>
+			<h4><a href="http://xxyxyz.org/">Xxyxyz</a></h4>
+			<ul>
+				<li><a href="http://xxyxyz.org/flat/">Flat</a></li>
+				<li><a href="http://xxyxyz.org/even/">Even</a></li>
+			</ul>
+		</nav>
+	</header>
+	<section>
+		<h4>Making of: Flat API tree</h4>
+		<p><img src="Making%20of%20Flat%20API%20tree%20%E2%80%94%20Xxyxyz_arquivos/tree.png" alt="Flat API Tree"></p><p>Next
+ in the "Making of" series are the steps to reproduce the Flat API 
+diagram. One particular thing to note, as it is a very central concept 
+of Flat: create the shapes or strikes at the beginning and reuse across 
+the whole program. This is different from say, Processing, where one 
+maintains the drawing state manually. The code does not save the 
+resulting image on disk, it shows it in Even instead.</p><pre><code class="python"><span class="keyword">from</span> flat <span class="keyword">import</span> rgb, font, moveto, curveto, shape, strike, tree, document, view
+
+api = tree((
+    <span class="string">'flat'</span>, (
+        <span class="string">'document'</span>, (
+            <span class="string">'page'</span>, (
+                <span class="string">'placedimage'</span>, (
+                    <span class="string">'image'</span>,),
+                <span class="string">'placedshape'</span>, (
+                    <span class="string">'line'</span>, (
+                        <span class="string">'shape'</span>, (
+                            <span class="string">'stroke'</span>, (
+                                <span class="string">'gray'</span>,
+                                <span class="string">'ga'</span>,
+                                <span class="string">'rgb'</span>,
+                                <span class="string">'rgba'</span>,
+                                <span class="string">'cmyk'</span>,
+                                <span class="string">'spot'</span>,
+                                <span class="string">'devicen'</span>,
+                                <span class="string">'overprint'</span>),
+                            <span class="string">'fill ...'</span>)),
+                    <span class="string">'polyline ...'</span>,
+                    <span class="string">'polygon ...'</span>,
+                    <span class="string">'rect ...'</span>,
+                    <span class="string">'circle ...'</span>,
+                    <span class="string">'ellipse ...'</span>,
+                    <span class="string">'path'</span>, (
+                        <span class="string">'shape ...'</span>,
+                        <span class="string">'commands'</span>, (
+                            <span class="string">'moveto'</span>,
+                            <span class="string">'lineto'</span>,
+                            <span class="string">'quadto'</span>,
+                            <span class="string">'curveto'</span>,
+                            <span class="string">'closepath'</span>)),),
+                <span class="string">'placedtext'</span>, (
+                    <span class="string">'text'</span>, (
+                        <span class="string">'paragraph'</span>, (
+                            <span class="string">'span'</span>, (
+                                <span class="string">'strike'</span>, (
+                                    <span class="string">'font'</span>,
+                                    <span class="string">'textcolor ...'</span>),
+                                <span class="string">'string'</span>)))),
+                <span class="string">'placedoutlines'</span>, (
+                    <span class="string">'outlines ...'</span>,),
+                <span class="string">'placedgroup'</span>, (
+                    <span class="string">'group'</span>,)),),
+        <span class="string">'scene'</span>, (
+            <span class="string">'mesh'</span>,
+            <span class="string">'diffuse'</span>),
+        <span class="string">'raw'</span>,
+        <span class="string">'tree'</span>, (
+            <span class="string">'tree'</span>,),
+        <span class="string">'view'</span>, (
+            <span class="string">'flat'</span>,))))
+
+black = rgb(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)
+blue = rgb(<span class="number">25</span>, <span class="number">51</span>, <span class="number">229</span>)
+<span class="comment"># Inconsolata by Raph Levien</span>
+<span class="comment"># http://www.google.com/fonts/specimen/Inconsolata</span>
+bold = font.open(<span class="string">'Inconsolata-Bold.ttf'</span>)
+drawing = shape().stroke(blue).width(<span class="number">0.8</span>)
+caption = strike(bold).size(<span class="number">8.9</span>, <span class="number">10</span>).color(black)
+
+space = caption.width(<span class="string">' '</span>)
+half = caption.ascender() * <span class="number">0.7</span>
+
+page = document().addpage().size(<span class="number">657</span>, <span class="number">297</span>, <span class="string">'pt'</span>)
+api.flip().frame(<span class="number">1</span>, <span class="number">8.3</span>, <span class="number">598</span>, <span class="number">280</span>)
+
+<span class="keyword">for</span> node <span class="keyword">in</span> api.nodes():
+    x2, y2 = node.x, node.y
+    page.place(caption.text(node.item)).position(x2, y2 - half)
+    <span class="keyword">if</span> node.parent:
+        x0, y0 = node.parent.x, node.parent.y
+        x0 += space * len(node.parent.item) + space
+        x2 -= space
+        page.place(drawing.path(
+            moveto(x0, y0),
+            curveto(
+                (x0 + x2) * <span class="number">0.5</span>, (y0 + y2) * <span class="number">0.5</span>,
+                (x0 + x2) * <span class="number">0.5</span>, y2,
+                x2, y2)))
+
+view(page.image(ppi=<span class="number">100</span>, kind=<span class="string">'rgb'</span>).png())
+</code></pre>
+		<p>— 29. 10. 2013</p>
+	</section>
+	<footer>
+	</footer>
+
+</body></html>

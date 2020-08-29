@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Bridges — Xxyxyz</title>
+	<meta name="description" content="Truss bridge optimized by genetical algorithm."> 
+	<link rel="alternate" type="application/atom+xml" title="Xxyxyz feed" href="http://xxyxyz.org/feed">
+	<link rel="stylesheet" href="Bridges%20%E2%80%94%20Xxyxyz_arquivos/css_002.css" type="text/css">
+	<link rel="stylesheet" href="Bridges%20%E2%80%94%20Xxyxyz_arquivos/css.css" type="text/css">
+	<link rel="stylesheet" href="Bridges%20%E2%80%94%20Xxyxyz_arquivos/font-awesome.css">
+	<link rel="stylesheet" href="Bridges%20%E2%80%94%20Xxyxyz_arquivos/style.css" type="text/css">
+	<script async="" src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/analytics.js"></script><script src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/highlight.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-33654362-2', 'xxyxyz.org');
+		ga('send', 'pageview');
+	</script>
+</head>
+<body>
+	<header>
+		<nav>
+			<h4><a href="http://xxyxyz.org/">Xxyxyz</a></h4>
+			<ul>
+				<li><a href="http://xxyxyz.org/flat/">Flat</a></li>
+				<li><a href="http://xxyxyz.org/even/">Even</a></li>
+			</ul>
+		</nav>
+	</header>
+	<section>
+		<h4>Bridges</h4>
+		<p><img src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/scan-4-optimized.png" alt="Scan"></p><p>This picture is almost 11 years old. Too old, if you ask me.</p><p>During
+ the winter 2002/2003 I was working on a school project regarding the 
+topic "bridges". Good "bridges" are better than bad ones so I set out to
+ find an optimal configuration of a truss bridge. The basic principle 
+was to minimize the compression/tension force in the most stressed 
+member, i.e. to distribute the load among different members. One way of 
+doing it, and for which the source code is displayed below, consists of 
+two parts: calculating the static scheme of a structure and exploring 
+the search space with genetical algorithm.</p><p>To say that a structure
+ is stable is to say that the forces acting on all the joints are in 
+static equilibrium — they all zero out. Thus one can write down the 
+problem as a system of linear equations and solve it with <a href="http://en.wikipedia.org/wiki/Gaussian_elimination">Gaussian elimination</a>.
+ As truss bridges fail when one of its members fails, the smaller is the
+ force acting upon the most stress member, the better. The question then
+ is, where to put the joints so that the load spreads out nicely?</p><p>Genetical algorithm (with <a href="http://en.wikipedia.org/wiki/Genetic_algorithm#Elitism">elitism</a>)
+ is a stochastic method for locating the global extrema of a function. 
+While applying the natural selection pressure, it cross-breeds and 
+mutates a population of states. The better an individual fits in, the 
+greater chance it has to mate with another fitting individual, hence to 
+carry part of its genome to next generation. In the example of bridges, 
+the fitness criterion is then the inverse of most intense force. To stop
+ the evolutionary process one can look for the magnitude of improvement 
+along the generations. Or to mind the width of the <a href="https://xxyxyz.org/bridges/__mosty9final2943.pdf">poster</a>.</p><p>Animations capturing the bridge optimization (four runs):</p><p><img src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/long1.gif" alt="Animation 1"><img src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/2909.gif" alt="Animation 2"><img src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/2921.gif" alt="Animation 3"><img src="Bridges%20%E2%80%94%20Xxyxyz_arquivos/2928.gif" alt="Animation 4"></p><p>Original <a href="https://xxyxyz.org/bridges/mosty9.py">source code</a> (for Python 2.2!) and cleaned-up version using Flat:</p><pre><code class="python"><span class="keyword">from</span> bisect <span class="keyword">import</span> bisect_left
+<span class="keyword">from</span> math <span class="keyword">import</span> hypot
+<span class="keyword">from</span> random <span class="keyword">import</span> normalvariate, random, randrange
+<span class="keyword">from</span> flat <span class="keyword">import</span> shape, document, view
+
+<span class="function"><span class="keyword">def</span> <span class="title">solve</span><span class="params">(a, b)</span>:</span>
+    <span class="comment"># Gaussian elimination with partial pivoting</span>
+    n = len(a)
+    <span class="keyword">assert</span> n == len(a[<span class="number">0</span>]), <span class="string">'Non-square matrix.'</span>
+    <span class="keyword">assert</span> n == len(b), <span class="string">'Invalid dimensions.'</span>
+    <span class="keyword">for</span> k <span class="keyword">in</span> range(n - <span class="number">1</span>):
+
+        pivot, value = k, abs(a[k][k])
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(k + <span class="number">1</span>, n):
+            v = abs(a[j][k])
+            <span class="keyword">if</span> v &gt; value:
+                pivot, value = j, v
+        <span class="keyword">if</span> pivot != k:
+            a[pivot], a[k] = a[k], a[pivot]
+            b[pivot], b[k] = b[k], b[pivot]
+
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(k + <span class="number">1</span>, n):
+            scale = a[j][k] / a[k][k]
+            <span class="keyword">for</span> i <span class="keyword">in</span> range(k + <span class="number">1</span>, n):
+                a[j][i] -= a[k][i] * scale
+            b[j] -= b[k] * scale
+
+    x = [<span class="number">0.0</span>] * n
+    <span class="keyword">for</span> j <span class="keyword">in</span> range(n - <span class="number">1</span>, -<span class="number">1</span>, -<span class="number">1</span>):
+        <span class="keyword">for</span> i <span class="keyword">in</span> range(j + <span class="number">1</span>, n):
+            b[j] -= a[j][i] * x[i]
+        x[j] = b[j] / a[j][j]
+
+    <span class="keyword">return</span> x
+
+<span class="function"><span class="keyword">def</span> <span class="title">members</span><span class="params">(genomes, x)</span>:</span>
+    <span class="keyword">for</span> y, (ax,ay,ex,ey,bx,by,fx,fy,cx,cy,gx,gy,dx,dy) <span class="keyword">in</span> enumerate(genomes):
+        <span class="keyword">yield</span> ax+x, ay+y, ex+x, ey+y
+        <span class="keyword">yield</span> ax+x, ay+y, bx+x, by+y
+        <span class="keyword">yield</span> ex+x, ey+y, bx+x, by+y
+        <span class="keyword">yield</span> ex+x, ey+y, fx+x, fy+y
+        <span class="keyword">yield</span> bx+x, by+y, fx+x, fy+y
+        <span class="keyword">yield</span> bx+x, by+y, cx+x, cy+y
+        <span class="keyword">yield</span> fx+x, fy+y, cx+x, cy+y
+        <span class="keyword">yield</span> fx+x, fy+y, gx+x, gy+y
+        <span class="keyword">yield</span> cx+x, cy+y, gx+x, gy+y
+        <span class="keyword">yield</span> cx+x, cy+y, dx+x, dy+y
+        <span class="keyword">yield</span> gx+x, gy+y, dx+x, dy+y
+
+<span class="function"><span class="keyword">def</span> <span class="title">forces</span><span class="params">(genomes)</span>:</span>
+    <span class="keyword">for</span> ax, ay, ex, ey, bx, by, fx, fy, cx, cy, gx, gy, dx, dy <span class="keyword">in</span> genomes:
+        ab = hypot(ax-bx, ay-by)
+        ae = hypot(ax-ex, ay-ey)
+        bc = hypot(bx-cx, by-cy)
+        be = hypot(bx-ex, by-ey)
+        bf = hypot(bx-fx, by-fy)
+        cd = hypot(cx-dx, cy-dy)
+        cf = hypot(cx-fx, cy-fy)
+        cg = hypot(cx-gx, cy-gy)
+        dg = hypot(dx-gx, dy-gy)
+        ef = hypot(ex-fx, ey-fy)
+        fg = hypot(fx-gx, fy-gy)
+
+        ca1a, sa1a = (ex-ax)/ae, (ey-ay)/ae
+        ca1e, sa1e = (ax-ex)/ae, (ay-ey)/ae
+        ca2a, sa2a = (bx-ax)/ab, (by-ay)/ab
+        ca2b, sa2b = (ax-bx)/ab, (ay-by)/ab
+        cb1b, sb1b = (ex-bx)/be, (ey-by)/be
+        cb1e, sb1e = (bx-ex)/be, (by-ey)/be
+        cb2e, sb2e = (fx-ex)/ef, (fy-ey)/ef
+        cb2f, sb2f = (ex-fx)/ef, (ey-fy)/ef
+        cg1b, sg1b = (cx-bx)/bc, (cy-by)/bc
+        cg1c, sg1c = (bx-cx)/bc, (by-cy)/bc
+        cg2c, sg2c = (fx-cx)/cf, (fy-cy)/cf
+        cg2f, sg2f = (cx-fx)/cf, (cy-fy)/cf
+        cd1b, sd1b = (fx-bx)/bf, (fy-by)/bf
+        cd1f, sd1f = (bx-fx)/bf, (by-fy)/bf
+        ce1f, se1f = (gx-fx)/fg, (gy-fy)/fg
+        ce1g, se1g = (fx-gx)/fg, (fy-gy)/fg
+        ce2c, se2c = (gx-cx)/cg, (gy-cy)/cg
+        ce2g, se2g = (cx-gx)/cg, (cy-gy)/cg
+        cf1c, sf1c = (dx-cx)/cd, (dy-cy)/cd
+        cf1d, sf1d = (cx-dx)/cd, (cy-dy)/cd
+        cf2d, sf2d = (gx-dx)/dg, (gy-dy)/dg
+        cf2g, sf2g = (dx-gx)/dg, (dy-gy)/dg
+
+        p1, p2, f = <span class="number">10.0</span>, <span class="number">10.0</span>, <span class="number">1000.0</span>
+        a = [
+            [ca2a,ca1a, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [sa2a,sa1a, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ca2b, <span class="number">0.0</span>,cg1b,cb1b,cd1b, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [sa2b, <span class="number">0.0</span>,sg1b,sb1b,sd1b, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>,cg1c, <span class="number">0.0</span>, <span class="number">0.0</span>,cf1c,cg2c,ce2c, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>,sg1c, <span class="number">0.0</span>, <span class="number">0.0</span>,sf1c,sg2c,se2c, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,cf1d, <span class="number">0.0</span>, <span class="number">0.0</span>,cf2d, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,sf1d, <span class="number">0.0</span>, <span class="number">0.0</span>,sf2d, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">1.0</span>],
+            [ <span class="number">0.0</span>,ca1e, <span class="number">0.0</span>,cb1e, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,cb2e, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>,sa1e, <span class="number">0.0</span>,sb1e, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,sb2e, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,cd1f, <span class="number">0.0</span>,cg2f, <span class="number">0.0</span>, <span class="number">0.0</span>,cb2f,ce1f, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,sd1f, <span class="number">0.0</span>,sg2f, <span class="number">0.0</span>, <span class="number">0.0</span>,sb2f,se1f, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,ce2g,cf2g, <span class="number">0.0</span>,ce1g, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>],
+            [ <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>,se2g,sf2g, <span class="number">0.0</span>,se1g, <span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>]]
+        b = [
+            <span class="number">0.0</span>, ab*f + ae*f,
+            <span class="number">0.0</span>, p1 + ab*f + be*f + bf*f + bc*f,
+            <span class="number">0.0</span>, p2 + bc*f + cf*f + cg*f + cd*f,
+            <span class="number">0.0</span>, cd*f + dg*f,
+            <span class="number">0.0</span>, ae*f + be*f + ef*f,
+            <span class="number">0.0</span>, ef*f + bf*f + cf*f + fg*f,
+            <span class="number">0.0</span>, fg*f + cg*f + dg*f]
+        x = solve(a, b)
+        <span class="keyword">yield</span> max(abs(max(x)), abs(min(x)))
+
+population, generations = <span class="number">100</span>, <span class="number">60</span>
+
+figure = shape().width(<span class="number">0.2</span>)
+doc = document(generations, population, <span class="string">'cm'</span>)
+page = doc.addpage()
+
+genomes = [[
+    <span class="number">0.05</span>, <span class="number">0.5</span>,
+    random(), random(),
+    random(), random(),
+    random(), random(),
+    random(), random(),
+    random(), random(),
+    <span class="number">0.95</span>, <span class="number">0.5</span>] <span class="keyword">for</span> i <span class="keyword">in</span> range(population)]
+
+<span class="keyword">for</span> x0, y0, x1, y1 <span class="keyword">in</span> members(genomes, <span class="number">0</span>):
+    page.place(figure.line(x0, y0, x1, y1))
+
+<span class="keyword">for</span> generation <span class="keyword">in</span> range(<span class="number">1</span>, generations):
+
+    fitness = [<span class="number">1.0</span> / f ** <span class="number">2</span> <span class="keyword">for</span> f <span class="keyword">in</span> forces(genomes)]
+    best = fitness.index(max(fitness))
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>, population):
+        fitness[i] += fitness[i - <span class="number">1</span>]
+
+    new = [genomes[best]]
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>, population):
+        a = bisect_left(fitness, random() * fitness[-<span class="number">1</span>])
+        b = bisect_left(fitness, random() * fitness[-<span class="number">1</span>])
+        split = randrange(<span class="number">0</span>, <span class="number">15</span>)
+        new.append(genomes[a][:split] + genomes[b][split:])
+    genomes = new
+
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(population):
+        u, v = randrange(<span class="number">1</span>, population), randrange(<span class="number">2</span>, <span class="number">12</span>)
+        genomes[u][v] = normalvariate(genomes[u][v], <span class="number">0.1</span>)
+        <span class="keyword">if</span> genomes[u][v] &lt; <span class="number">0.0</span>:
+            genomes[u][v] = -genomes[u][v]
+        <span class="keyword">elif</span> genomes[u][v] &gt; <span class="number">1.0</span>:
+            genomes[u][v] = <span class="number">2.0</span> - genomes[u][v]
+
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">5</span>):
+        u, v = randrange(<span class="number">1</span>, population), randrange(<span class="number">2</span>, <span class="number">12</span>)
+        genomes[u][v] = random()
+
+    <span class="keyword">for</span> x0, y0, x1, y1 <span class="keyword">in</span> members(genomes, generation):
+        page.place(figure.line(x0, y0, x1, y1))
+
+view(doc.pdf())
+</code></pre>
+		<p>— 20. 11. 2013</p>
+	</section>
+	<footer>
+	</footer>
+
+</body></html>
